@@ -1,0 +1,87 @@
+From c06811e8e74125c1b5a60e2e46d7b0fa2b72b169 Mon Sep 17 00:00:00 2001
+From: Fr0sT <fr0st.brutal@gmail.com>
+Date: Fri, 27 Jun 2014 10:59:00 +0400
+Subject: [PATCH 6/6] =?UTF-8?q?+=20TCustomDBEditEh.ScrollBars.=20=D0=A2=D0=B5?=
+ =?UTF-8?q?=D0=BF=D0=B5=D1=80=D1=8C=20=D1=8D=D1=82=D0=BE=20=D0=BF=D1=80=D0=B0?=
+ =?UTF-8?q?=D0=BA=D1=82=D0=B8=D1=87=D0=B5=D1=81=D0=BA=D0=B8=20=D0=BF=D0=BE=D0?=
+ =?UTF-8?q?=BB=D0=BD=D0=BE=D1=86=D0=B5=D0=BD=D0=BD=D0=B0=D1=8F=20=D0=B7=D0=B0?=
+ =?UTF-8?q?=D0=BC=D0=B5=D0=BD=D0=B0=20TDBMemo?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ Common/DBCtrlsEh.pas | 18 +++++++++++++++++-
+ 1 file changed, 17 insertions(+), 1 deletion(-)
+
+diff --git a/Common/DBCtrlsEh.pas b/Common/DBCtrlsEh.pas
+index aa7b0be..a1d8630 100644
+--- a/Common/DBCtrlsEh.pas
++++ b/Common/DBCtrlsEh.pas
+@@ -199,6 +199,7 @@ type
+     FOnGetImageIndex: TGetImageIndexEventEh;
+     FOnUpdateData: TUpdateDataEventEh;
+     FReadOnly: Boolean;
++    FScrollBars: TScrollStyle;
+     FShowHint: Boolean;
+     FTooltips: Boolean;
+     FWantReturns: Boolean;
+@@ -270,6 +271,7 @@ type
+     procedure SetOnGetImageIndex(const Value: TGetImageIndexEventEh);
+     procedure SetPasswordChar(const Value: Char);
+     procedure SetReadOnly(Value: Boolean);
++    procedure SetScrollBars(Value: TScrollStyle);
+     procedure SetShowHint(const Value: Boolean);
+     procedure SetText(const Value: String); {$IFDEF CIL} reintroduce; {$ENDIF}
+     procedure SetTooltips(const Value: Boolean);
+@@ -402,6 +404,7 @@ type
+     property MRUList: TMRUListEh read FMRUList write SetMRUList;
+     property MRUListControl: TWinControl read GetMRUListControl;
+     property PasswordChar: Char read GetPasswordChar write SetPasswordChar default #0;
++    property ScrollBars: TScrollStyle read FScrollBars write SetScrollBars default ssNone;
+     property WantReturns: Boolean read FWantReturns write FWantReturns default False;
+     property WantTabs: Boolean read FWantTabs write FWantTabs default False;
+     property WordWrap: Boolean read FWordWrap write SetWordWrap default False;
+@@ -483,6 +486,7 @@ type
+     property PopupMenu;
+     property ReadOnly;
+     property ShowHint;
++    property ScrollBars;
+     property TabOrder;
+     property TabStop;
+     property Text;
+@@ -2005,11 +2009,14 @@ const
+     ((ES_LEFT, ES_RIGHT, ES_CENTER), (ES_RIGHT, ES_LEFT, ES_CENTER)));
+   WordWraps: array[Boolean] of DWORD = (0, ES_AUTOHSCROLL);
+   PasswordChars: array[Boolean] of DWORD = (ES_MULTILINE, 0);
++  ScrollBar: array[TScrollStyle] of DWORD = (0, WS_HSCROLL, WS_VSCROLL,
++    WS_HSCROLL or WS_VSCROLL);
+ begin
+   inherited CreateParams(Params);
+   Params.Style := Params.Style and not WordWraps[FWordWrap] or
+     PasswordChars[PasswordChar <> #0] or
+-    Alignments[FWordWrap, UseRightToLeftAlignment, Alignment];
++    Alignments[FWordWrap, UseRightToLeftAlignment, Alignment] or
++    ScrollBar[FScrollBars];
+ end;
+ 
+ procedure TCustomDBEditEh.CreateWnd;
+@@ -3833,6 +3840,15 @@ begin
+   end;
+ end;
+ 
++procedure TCustomDBEditEh.SetScrollBars(Value: TScrollStyle);
++begin
++  if FScrollBars <> Value then
++  begin
++    FScrollBars := Value;
++    RecreateWnd;
++  end;
++end;
++
+ procedure TCustomDBEditEh.UpdateHintProcessing;
+ begin
+   inherited ShowHint := FTooltips or FShowHint;
+-- 
+1.7.11.msysgit.0
+

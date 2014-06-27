@@ -10,7 +10,7 @@
 
 **DBGridEh.pas:**
 
-`!` TColumnEh.CheckboxNullAsFalse, если True, то NULL значения полей будут отображаться как unchecked
+`+` TColumnEh.CheckboxNullAsFalse, если True, то NULL значения полей будут отображаться как unchecked
 
 **DbUtilsEh.pas:**
 
@@ -30,7 +30,7 @@
 
 **DclEhLib70.dpk, EhLib70.dpk:**
 
-`*` Изменены пути в файлах пакетов (не придется прописывать ..\Common в путях)
+`!` Изменены пути в файлах пакетов (не придется прописывать ..\Common в путях)
 
 --- 4 ---
 =========

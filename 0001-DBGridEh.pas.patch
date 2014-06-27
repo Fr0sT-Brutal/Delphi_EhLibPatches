@@ -1,0 +1,150 @@
+From ed23ee2f6bc87e8b3a77abc43a658b7e677701d9 Mon Sep 17 00:00:00 2001
+From: Fr0sT <fr0st.brutal@gmail.com>
+Date: Thu, 29 May 2014 15:07:40 +0400
+Subject: [PATCH 1/6] =?UTF-8?q?DBGridEh.pas:=20!=20TColumnEh.CheckboxNullAsF?=
+ =?UTF-8?q?alse,=20=D0=B5=D1=81=D0=BB=D0=B8=20True=20-=20NULL=20=D0=B7=D0=BD?=
+ =?UTF-8?q?=D0=B0=D1=87=D0=B5=D0=BD=D0=B8=D1=8F=20=D0=BF=D0=BE=D0=BB=D0=B5=D0?=
+ =?UTF-8?q?=B9=20=D0=B1=D1=83=D0=B4=D1=83=D1=82=20=D0=BE=D1=82=D0=BE=D0=B1=D1?=
+ =?UTF-8?q?=80=D0=B0=D0=B6=D0=B0=D1=82=D1=8C=D1=81=D1=8F=20=D0=BA=D0=B0=D0=BA?=
+ =?UTF-8?q?=20unchecked=20DbUtilsEh.pas:=20+=20=D0=9F=D0=B5=D1=80=D0=B5=D0=BC?=
+ =?UTF-8?q?=D0=B5=D0=BD=D0=BD=D0=B0=D1=8F=20SQLFieldNameQuoteChars,=20=D0=BC?=
+ =?UTF-8?q?=D0=BE=D0=B6=D0=BD=D0=BE=20=D0=BC=D0=B5=D0=BD=D1=8F=D1=82=D1=8C=20?=
+ =?UTF-8?q?=D0=B8=D0=BB=D0=B8=20=D0=BE=D0=B1=D0=BD=D1=83=D0=BB=D1=8F=D1=82=D1?=
+ =?UTF-8?q?=8C,=20=D1=87=D1=82=D0=BE=D0=B1=D1=8B=20=D1=8D=D0=BA=D1=80=D0=B0=D0?=
+ =?UTF-8?q?=BD=D0=B8=D1=80=D0=BE=D0=B2=D0=B0=D0=BD=D0=B8=D1=8F=20=D0=B8=D0=BC?=
+ =?UTF-8?q?=D0=B5=D0=BD=20=D0=BF=D0=BE=D0=BB=D0=B5=D0=B9=20=D0=BD=D0=B5=20=D0?=
+ =?UTF-8?q?=B1=D1=8B=D0=BB=D0=BE.=20=D0=98=D1=81=D0=BF=D0=BE=D0=BB=D1=8C=D0=B7?=
+ =?UTF-8?q?=D1=83=D0=B5=D1=82=D1=81=D1=8F=20=D0=B2=20GetOneExpressionAsLocal?=
+ =?UTF-8?q?FilterString=20!=20ApplySortingForSQLBasedDataSet,=20=D0=B8=D1=81?=
+ =?UTF-8?q?=D0=BF=D1=80=D0=B0=D0=B2=D0=BB=D0=B5=D0=BD=D0=BE=20=D0=BD=D0=B5=D0?=
+ =?UTF-8?q?=B2=D0=B5=D1=80=D0=BD=D0=BE=D0=B5=20=D0=BF=D0=BE=D0=BB=D0=BE=D0=B6?=
+ =?UTF-8?q?=D0=B5=D0=BD=D0=B8=D0=B5=20=D1=83=D0=BA=D0=B0=D0=B7=D0=B0=D1=82=D0?=
+ =?UTF-8?q?=B5=D0=BB=D1=8F=20=D1=81=D0=BE=D1=80=D1=82=D0=B8=D1=80=D0=BE=D0=B2?=
+ =?UTF-8?q?=D0=BA=D0=B8?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ Common/DBGridEh.pas  |  7 ++++++-
+ Common/DbUtilsEh.pas | 31 ++++++++++++++++++++++---------
+ 2 files changed, 28 insertions(+), 10 deletions(-)
+
+diff --git a/Common/DBGridEh.pas b/Common/DBGridEh.pas
+index 2678924..b84d272 100644
+--- a/Common/DBGridEh.pas
++++ b/Common/DBGridEh.pas
+@@ -662,6 +662,7 @@ type
+     FInitWidth: Integer;
+     FLookupDisplayFields: String;
+     FWordWrap: Boolean;
++    FCheckboxNullAsFalse: Boolean; // Fr0sT
+     function AllowableWidth(TryWidth: Integer): Integer;
+     function CreateEditButtons: TEditButtonsEh; virtual;
+     function CreateFooter: TColumnFooterEh; virtual;
+@@ -771,6 +772,7 @@ type
+     property AutoFitColWidth: Boolean read GetAutoFitColWidth write SetAutoFitColWidth default True;
+     property ButtonStyle: TColumnButtonStyleEh read FButtonStyle write SetButtonStyle default cbsAuto;
+     property Checkboxes: Boolean read GetCheckboxes write SetCheckboxes stored IsCheckboxesStored;
++    property CheckboxNullAsFalse: Boolean read FCheckboxNullAsFalse write FCheckboxNullAsFalse default False;
+     property Color: TColor read GetColor write SetColor stored IsColorStored;
+     property BiDiMode: TBiDiMode read GetBiDiMode write SetBiDiMode stored IsBiDiModeStored;
+     property DblClickNextVal: Boolean read GetDblClickNextVal write SetDblClickNextVal stored IsDblClickNextValStored;
+@@ -844,6 +846,7 @@ type
+     property BiDiMode;
+     property ButtonStyle;
+     property Checkboxes;
++    property CheckboxNullAsFalse;
+     property Color;
+     property DblClickNextVal;
+     property DisplayFormat;
+@@ -6587,7 +6590,9 @@ var
+ begin
+   if Field <> nil then
+     if Field.IsNull then
+-      Result := cbGrayed
++      if not FCheckboxNullAsFalse
++        then Result := cbGrayed
++        else Result := cbUnchecked
+     else if Field.DataType = ftBoolean then
+       if Field.AsBoolean
+         then Result := cbChecked
+diff --git a/Common/DbUtilsEh.pas b/Common/DbUtilsEh.pas
+index a1e4f04..f800f5b 100644
+--- a/Common/DbUtilsEh.pas
++++ b/Common/DbUtilsEh.pas
+@@ -165,6 +165,8 @@ procedure ApplySortingForSQLBasedDataSet(Grid: TCustomDBGridEh; DataSet: TDataSe
+ 
+ var
+   SQLFilterMarker: String = '/*FILTER*/';
++  // Fr0sT
++  SQLFieldNameQuoteChars: string = '[]';
+ 
+ resourcestring
+ 
+@@ -905,6 +907,17 @@ function GetOneExpressionAsLocalFilterString(O: TSTFilterOperatorEh; v: Variant;
+       Result := '''' + VarToStr(v) + '''';
+   end;
+ 
++  function QuoteFieldName(FieldName: string): string;
++  begin
++    case Length(SQLFieldNameQuoteChars) of
++      0: Result := FieldName;
++      1: Result := SQLFieldNameQuoteChars[1] + FieldName + SQLFieldNameQuoteChars[1];
++      2: Result := SQLFieldNameQuoteChars[1] + FieldName + SQLFieldNameQuoteChars[2];
++      else
++        Result := FieldName;
++    end;
++  end;
++
+ var
+   i: Integer;
+ begin
+@@ -913,27 +926,27 @@ begin
+     Result := Result + ' (';
+     if VarIsArray(v) then
+       for i := VarArrayLowBound(v, 1) to VarArrayHighBound(v, 1) do
+-        Result := Result + '[' + FieldName + '] = ' + VarValueAsFilterStr(v[i]) + ' OR '
++        Result := Result + ' ' + QuoteFieldName(FieldName) + ' = ' + VarValueAsFilterStr(v[i]) + ' OR '
+     else
+-      Result := Result + '[' +FieldName + '] = ' + VarValueAsFilterStr(v) + ' OR ';
++      Result := Result + ' ' + QuoteFieldName(FieldName) + ' = ' + VarValueAsFilterStr(v) + ' OR ';
+     Delete(Result, Length(Result) - 3, 4);
+     Result := Result + ')';
+   end
+   else if O in [foLike, foNotLike] then
+   begin
+-    Result := Result +  ' [' + FieldName;
++    Result := Result + ' ' + QuoteFieldName(FieldName);
+     if SupportsLike then
+       if O = foLike
+-        then Result := Result + '] Like '
+-        else Result := Result + '] Not Like '
++        then Result := Result + ' Like '
++        else Result := Result + ' Not Like '
+     else
+       if O = foLike
+-        then Result := Result + '] = '
+-        else Result := Result + '] <> ';
++        then Result := Result + ' = '
++        else Result := Result + ' <> ';
+     Result := Result + VarValueAsFilterStr(v);
+   end else
+   begin
+-    Result := Result +  ' [' + FieldName +  '] ' + STFilterOperatorsSQLStrMapEh[O];
++    Result := Result +  ' ' + QuoteFieldName(FieldName) +  ' ' + STFilterOperatorsSQLStrMapEh[O];
+     if not (O in [foNull, foNotNull]) then
+       Result := Result + ' ' + VarValueAsFilterStr(v);
+   end;
+@@ -1159,7 +1172,7 @@ begin
+       if UseFieldName
+         then s := s + Grid.SortMarkedColumns[i].FieldName
+         else s := s + IntToStr(Grid.SortMarkedColumns[i].Field.FieldNo);
+-      if Grid.SortMarkedColumns[i].Title.SortMarker = smUpEh
++      if Grid.SortMarkedColumns[i].Title.SortMarker = smDownEh
+         then s := s + ' DESC, '
+         else s := s + ', ';
+     end;
+-- 
+1.7.11.msysgit.0
+

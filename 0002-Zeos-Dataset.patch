@@ -1,0 +1,118 @@
+From 2687954633a7e7c8d663b093a01c24d734aadbba Mon Sep 17 00:00:00 2001
+From: Fr0sT <fr0st.brutal@gmail.com>
+Date: Thu, 29 May 2014 15:08:40 +0400
+Subject: [PATCH 2/6] =?UTF-8?q?+=20=D0=94=D0=BE=D0=B1=D0=B0=D0=B2=D0=BB=D0=B5?=
+ =?UTF-8?q?=D0=BD=D0=B0=20=D0=BF=D0=BE=D0=B4=D0=B4=D0=B5=D1=80=D0=B6=D0=BA=D0?=
+ =?UTF-8?q?=B0=20=D1=81=D0=BE=D1=80=D1=82=D0=B8=D1=80=D0=BE=D0=B2=D0=BA=D0=B8?=
+ =?UTF-8?q?/=D1=84=D0=B8=D0=BB=D1=8C=D1=82=D1=80=D0=B0=D1=86=D0=B8=D0=B8=20=D0?=
+ =?UTF-8?q?=B4=D0=BB=D1=8F=20Zeos=20Dataset?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ DataService/EhLibZeos.pas | 92 +++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 92 insertions(+)
+ create mode 100644 DataService/EhLibZeos.pas
+
+diff --git a/DataService/EhLibZeos.pas b/DataService/EhLibZeos.pas
+new file mode 100644
+index 0000000..c91d122
+--- /dev/null
++++ b/DataService/EhLibZeos.pas
+@@ -0,0 +1,92 @@
++{*******************************************************}
++{                                                       }
++{                       EhLib v3.5                      }
++{          Register object that sort data in            }
++{                TZAbstractDataset                      }
++{                                                       }
++{   Copyright (c) 2002, 2003 by Dmitry V. Bolshakov     }
++{                                                       }
++{*******************************************************}
++
++{*******************************************************}
++{ Add this unit to 'uses' clause of any unit of your    }
++{ project to allow TDBGridEh to sort data in            }
++{ TZAbstractDataset automatically after sorting markers }
++{ will be changed.                                      }
++{*******************************************************}
++
++unit EhLibZeos;
++
++{$I EhLib.Inc}
++
++interface
++
++uses
++  DbUtilsEh, DBGridEh, Db, ZAbstractDataset;
++
++type
++
++  TZeosDatasetFeaturesEh = class(TSQLDatasetFeaturesEh)
++  public
++    constructor Create; override;
++    procedure ApplySorting(Sender: TObject; DataSet: TDataSet; IsReopen: Boolean); override;
++    procedure ApplyFilter(Sender: TObject; DataSet: TDataSet; IsReopen: Boolean); override;
++  end;
++
++implementation
++
++type
++  TCustomDBGridEhHack = class(TCustomDBGridEh)
++  end;
++
++{ TZeosDatasetFeaturesEh }
++
++function DateValueToSQLStringProc(DataSet: TDataSet; Value: Variant): String;
++begin
++  Result := DateValueToDataBaseSQLString('STANDARD', Value)
++end;
++
++procedure TZeosDatasetFeaturesEh.ApplyFilter(Sender: TObject; DataSet: TDataSet; IsReopen: Boolean);
++begin
++  if Sender is TCustomDBGridEh then
++    if TCustomDBGridEhHack(Sender).STFilter.Local then
++    begin
++      TCustomDBGridEh(Sender).DataSource.DataSet.Filter :=
++        GetExpressionAsFilterString(TCustomDBGridEh(Sender),
++          GetOneExpressionAsLocalFilterString, nil);
++      TCustomDBGridEh(Sender).DataSource.DataSet.Filtered := True;
++    end else
++      ApplyFilterSQLBasedDataSet(TCustomDBGridEh(Sender), DateValueToSQLStringProc, IsReopen, 'SQL');
++end;
++
++procedure TZeosDatasetFeaturesEh.ApplySorting(Sender: TObject; DataSet: TDataSet; IsReopen: Boolean);
++var
++  s: String;
++  i: Integer;
++begin
++  if Sender is TCustomDBGridEh then
++    if TCustomDBGridEh(Sender).SortLocal then
++    begin
++      s := '';
++      for i := 0 to TCustomDBGridEh(Sender).SortMarkedColumns.Count - 1 do
++      begin
++        s := s + TCustomDBGridEh(Sender).SortMarkedColumns[i].FieldName;
++        if TCustomDBGridEh(Sender).SortMarkedColumns[i].Title.SortMarker = smDownEh
++          then s := s + ' DESC, '
++          else s := s + ', ';
++      end;
++      TZAbstractDataset(DataSet).SortedFields := Copy(s, 1, Length(s) - 2);
++    end
++    else
++      inherited ApplySorting(Sender, DataSet, IsReopen);
++end;
++
++constructor TZeosDatasetFeaturesEh.Create;
++begin
++  inherited;
++  SupportsLocalLike := True;
++end;
++
++initialization
++  RegisterDatasetFeaturesEh(TZeosDatasetFeaturesEh, TZAbstractDataset);
++end.
+-- 
+1.7.11.msysgit.0
+

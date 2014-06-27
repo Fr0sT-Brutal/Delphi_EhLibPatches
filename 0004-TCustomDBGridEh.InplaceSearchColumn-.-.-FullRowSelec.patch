@@ -1,0 +1,150 @@
+From 6ed094b3d38ff19bf3b3b8d6664de43996dbb315 Mon Sep 17 00:00:00 2001
+From: Fr0sT <fr0st.brutal@gmail.com>
+Date: Fri, 30 May 2014 11:30:47 +0400
+Subject: [PATCH 4/6] =?UTF-8?q?+=20TCustomDBGridEh.InplaceSearchColumn,=20=D0?=
+ =?UTF-8?q?=BF=D0=BE=D0=B7=D0=B2=D0=BE=D0=BB=D1=8F=D0=B5=D1=82=20=D1=83=D0=BA?=
+ =?UTF-8?q?=D0=B0=D0=B7=D1=8B=D0=B2=D0=B0=D1=82=D1=8C=20=D1=81=D1=82=D0=BE=D0?=
+ =?UTF-8?q?=B1=D0=B5=D1=86,=20=D0=BF=D0=BE=20=D0=BA=D0=BE=D1=82=D0=BE=D1=80=D0?=
+ =?UTF-8?q?=BE=D0=BC=D1=83=20=D0=B1=D1=83=D0=B4=D0=B5=D1=82=20=D0=B2=D1=8B=D0?=
+ =?UTF-8?q?=BF=D0=BE=D0=BB=D0=BD=D1=8F=D1=82=D1=8C=D1=81=D1=8F=20=D0=B8=D0=BD?=
+ =?UTF-8?q?=D0=BA=D1=80.=20=D0=BF=D0=BE=D0=B8=D1=81=D0=BA.=20=D0=92=20=D0=BE?=
+ =?UTF-8?q?=D1=81=D0=BD=D0=BE=D0=B2=D0=BD=D0=BE=D0=BC=20=D0=B4=D0=BB=D1=8F=20?=
+ =?UTF-8?q?=D0=B8=D1=81=D0=BF=D0=BE=D0=BB=D1=8C=D0=B7=D0=BE=D0=B2=D0=B0=D0=BD?=
+ =?UTF-8?q?=D0=B8=D1=8F=20=D1=81=20=D0=BE=D0=BF=D1=86=D0=B8=D0=B5=D0=B9=20Fu?=
+ =?UTF-8?q?llRowSelect.?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+---
+ Common/DBGridEh.pas | 33 ++++++++++++++++++++++++++-------
+ 1 file changed, 26 insertions(+), 7 deletions(-)
+
+diff --git a/Common/DBGridEh.pas b/Common/DBGridEh.pas
+index b84d272..5f025fa 100644
+--- a/Common/DBGridEh.pas
++++ b/Common/DBGridEh.pas
+@@ -1397,6 +1397,7 @@ type
+     function GetFields(FieldIndex: Integer): TField;
+     function GetOddRowColor: TColor;
+     function GetRowHeights(Index: Longint): Integer;
++    function GetSearchColumn: Integer;
+     function GetSelectedField: TField;
+     function GetSelectedIndex: Integer;
+     function GetTopDataOffset: Byte;
+@@ -1553,6 +1554,7 @@ type
+     FMoveRowSourLevel: Integer;
+     FMoveRowDestLevel: Integer;
+     FMoveRowLeftBounds: Integer;
++    FInplaceSearchColumn: Integer;
+ 
+     function AcquireFocus: Boolean; virtual;
+     function AcquireLayoutLock: Boolean;
+@@ -1732,6 +1734,7 @@ type
+     procedure SetFilterValue(DCol: Longint); virtual;
+     procedure SetFooterRowCount(Value: Integer);
+     procedure SetFrozenCols(Value: Integer);
++    procedure SetInplaceSearchColumn(Value: Integer);
+     procedure SetRowHeight(Value: Integer);
+     procedure SetRowLines(Value: Integer);
+     procedure SetRowSizingAllowed(Value: Boolean);
+@@ -1899,6 +1902,7 @@ type
+     property IndicatorOffset: Byte read FIndicatorOffset;
+     property InplaceEditor;
+     property InplaceSearching: Boolean read FInplaceSearching;
++    property InplaceSearchColumn: Integer read FInplaceSearchColumn write SetInplaceSearchColumn default 0;
+     property LeafFieldArr: PTLeafCol read FLeafFieldArr;
+     property LeftCol;
+     property MinAutoFitWidth: Integer read FMinAutoFitWidth write WriteMinAutoFitWidth default 0;
+@@ -1992,6 +1996,7 @@ type
+     property FooterRowCount;
+     property FrozenCols;
+     property HorzScrollBar;
++    property InplaceSearchColumn;
+ {$IFDEF EH_LIB_VCL}
+     property ImeMode;
+     property ImeName;
+@@ -9524,7 +9529,7 @@ begin
+           if FInplaceSearching
+             and (gdSelected in AState)
+             and IsCurrentRow(FOldActiveRecord)
+-            and (ACol + IndicatorOffset = Col)
++            and (ACol = GetSearchColumn)
+             and ((dgAlwaysShowSelection in Options) or Focused)
+             and not (csDesigning in ComponentState)
+             and (UpdateLock = 0)
+@@ -10335,7 +10340,7 @@ begin
+     FDatalink.UpdateData;
+   inherited KeyPress(Key);
+   if (  FInplaceSearching or
+-       ((dghIncSearch in OptionsEh) and not CanEditModifyColumn(SelectedIndex)) or
++       ((dghIncSearch in OptionsEh) and not CanEditModifyColumn(GetSearchColumn)) or
+        ((dghPreferIncSearch in OptionsEh) and not (dgAlwaysShowEditor in Options) and not InplaceEditorVisible)
+      ) and (Key >= #32) and FDatalink.Active and not (FDatalink.DataSet.State in dsEditModes)
+     then
+@@ -10390,7 +10395,7 @@ begin
+     else if ( FInplaceSearching
+             or
+              ((dghIncSearch in OptionsEh) and
+-             not CanEditModifyColumn(SelectedIndex))
++             not CanEditModifyColumn(GetSearchColumn))
+             or
+              ((dghPreferIncSearch in OptionsEh) and not (dgAlwaysShowEditor in Options) and not InplaceEditorVisible)
+             ) and
+@@ -13250,6 +13255,13 @@ begin
+   LayoutChanged;
+ end;
+ 
++procedure TCustomDBGridEh.SetInplaceSearchColumn(Value: Integer);
++begin
++  if FInplaceSearchColumn = Value then Exit;
++  if FInplaceSearching then StopInplaceSearch;
++  FInplaceSearchColumn := Value;
++end;
++
+ procedure TCustomDBGridEh.SetFooterFont(Value: TFont);
+ begin
+   FFooterFont.Assign(Value);
+@@ -13410,6 +13422,13 @@ begin
+   Result := RowHeights[Index];
+ end;
+ 
++function TCustomDBGridEh.GetSearchColumn: Integer;
++begin
++  if (FInplaceSearchColumn > 0) and (FInplaceSearchColumn <= Columns.Count)
++    then Result := FInplaceSearchColumn
++    else Result := SelectedIndex;
++end;
++
+ procedure TCustomDBGridEh.WriteCellText(Column: TColumnEh;
+   ACanvas: TCanvas; ARect: TRect; FillRect: Boolean; DX, DY: Integer;
+   Text: string; Alignment: TAlignment; Layout: TTextLayout;
+@@ -17652,10 +17671,10 @@ begin
+   RecordFounded := False;
+   if NesSs <> '' then
+     with DataSource.DataSet do
+-      if (NlsUpperCase(Copy(Columns[SelectedIndex].DisplayText, 1, Length(NesSs))) =
++      if (NlsUpperCase(Copy(Columns[GetSearchColumn].DisplayText, 1, Length(NesSs))) =
+         NlsUpperCase(NesSs)) and (InpsDirection = inpsFromFirstEh) then
+       begin
+-        NesSs := Copy(Columns[SelectedIndex].DisplayText, 1, Length(NesSs));
++        NesSs := Copy(Columns[GetSearchColumn].DisplayText, 1, Length(NesSs));
+         RecordFounded := True;
+       end else
+       begin
+@@ -17665,10 +17684,10 @@ begin
+           if InpsDirection = inpsFromFirstEh then First else ToNextRec;
+           while not CheckEofBof do
+           begin
+-            if NlsUpperCase(Copy(Columns[SelectedIndex].DisplayText, 1, Length(NesSs))) =
++            if NlsUpperCase(Copy(Columns[GetSearchColumn].DisplayText, 1, Length(NesSs))) =
+               NlsUpperCase(NesSs) then
+             begin
+-              NesSs := Copy(Columns[SelectedIndex].DisplayText, 1, Length(NesSs));
++              NesSs := Copy(Columns[GetSearchColumn].DisplayText, 1, Length(NesSs));
+               RecordFounded := True;
+               //Resync([rmCenter]); Need to use other methods to center founded record
+               Break;
+-- 
+1.7.11.msysgit.0
+
